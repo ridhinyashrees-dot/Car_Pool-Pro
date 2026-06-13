@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Pool - Rider Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2ecc71;   /* Eco-green */
+            --secondary: #3498db; /* Trust blue */
+            --dark: #2c3e50;      /* Professional dark */
+            --light: #ecf0f1;     /* Clean background */
+            --white: #ffffff;
+            --gradient-primary: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            --gradient-secondary: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            --shadow-light: 0 10px 30px rgba(0,0,0,0.1);
+            --shadow-hover: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #e8f5e8 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            background: rgba(44, 62, 80, 0.95);
+            backdrop-filter: blur(20px);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 600px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow-light);
+            margin-bottom: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- HEADERS --- */
+        h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+
+        /* --- FORMS --- */
+        .input-group { margin-bottom: 1.8rem; }
+
+        label { 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.8rem; 
+            font-weight: 600; 
+        }
+
+        input {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #e8f0fe;
+            border-radius: 16px;
+            font-size: 1rem;
+            background: #fafbff;
+        }
+
+        /* --- BUTTONS --- */
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            width: 100%;
+            padding: 1.3rem;
+            border: none;
+            border-radius: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--dark);
+            border: 2px solid #e1e8ed;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        /* --- CONTACT ACTIONS --- */
+        .contact-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 1.5rem;
+        }
+
+        .btn-call {
+            background: #3498db;
+            color: white;
+            flex: 1;
+            text-decoration: none;
+            text-align: center;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+            flex: 1;
+            text-decoration: none;
+            text-align: center;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .sos-floating-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 65px;
+    height: 65px;
+    background-color: #ff4757;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.5);
+    cursor: pointer;
+    z-index: 9999;
+    border: 3px solid white;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(255, 71, 87, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+}
+        
+
+        .match-item {
+            border-left: 5px solid var(--primary);
+            background: #f9f9f9;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border-radius: 20px;
+        }
+
+        .match-item strong { display: block; font-size: 1.2rem; margin-bottom: 5px; }
+        .match-item span { display: block; color: #666; font-size: 0.9rem; }
+
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h1><i class="fas fa-car-side"></i> Campus Pool</h1>
+    </nav>
+
+    <main class="container">
+        <section id="form-section" class="card">
+            <h2><i class="fas fa-search"></i> Find a Ride</h2>
+            
+            <div class="input-group">
+                <label><i class="fas fa-user"></i> Your Name</label>
+                <input type="text" id="userName" placeholder="Enter your name">
+            </div>
+             <div class="sos-floating-btn" onclick="handleSOS()">
+    <i class="fas fa-exclamation-triangle"></i>
+</div>
+            <div class="input-group">
+                <label><i class="fas fa-map-marker-alt"></i> Pickup Location</label>
+                <input type="text" id="pickup" placeholder="e.g. Downtown Office">
+            </div>
+
+            <div class="input-group">
+    <label><i class="fas fa-flag-checkered"></i> Destination</label>
+    <select id="destination" style="width: 100%; padding: 1.2rem 1.5rem; border: 2px solid #e8f0fe; border-radius: 16px; font-size: 1rem; background: #fafbff; appearance: none;">
+        <option value="" disabled selected>Where are you heading?</option>
+        <option value="Sri Eshwar College of Engineering">Sri Eshwar College of Engineering</option>
+        <option value="Nehru College of Engineering">Nehru College of Engineering</option>
+        <option value="V.S.B College of Engineering">V.S.B College of Engineering</option>
+        <option value="MCT College of Engineering">MCT College of Engineering</option>
+        <option value="Karpagam College of Engineering">Karpagam College of Engineering</option>
+        <option value="PSG College of Engineering">PSG College of Engineering</option>
+        <option value="CIT college of Engineering">CIT college of Engineering</option>
+    </select>
+</div>
+
+            <div class="input-group">
+                <label><i class="fas fa-clock"></i> Preferred Time</label>
+                <input type="time" id="travelTime">
+            </div>
+
+            <button onclick="findMatches()" class="btn-primary">
+                <i class="fas fa-rocket"></i> Search Matches
+            </button>
+        </section>
+
+        <section id="results-section" class="card hidden">
+            <button onclick="goBack()" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <h2><i class="fas fa-users"></i> Matches Found</h2>
+            <div id="matchList"></div>
+        </section>
+    </main>
+
+    <script>
+    async function findMatches() {
+        const name = document.getElementById('userName').value || "Guest";
+        const pickup = document.getElementById('pickup').value;
+        const dest = document.getElementById('destination').value;
+        const time = document.getElementById('travelTime').value;
+
+        if (!pickup || !dest || !time) {
+            alert("Please fill in all fields!");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/match', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    name: name, 
+                    pickup: pickup, 
+                    destination: dest, 
+                    time: time 
+                })
+            });
+
+            const matches = await response.json();
+            displayResults(matches, name);
+        } catch (e) {
+            alert("Server Error. Make sure app.py is running!");
+        }
+    }
+
+    function displayResults(matches, riderName) {
+        document.getElementById('form-section').classList.add('hidden');
+        document.getElementById('results-section').classList.remove('hidden');
+        
+        const list = document.getElementById('matchList');
+        list.innerHTML = "";
+
+        if (matches.length === 0) {
+            list.innerHTML = `<p style="text-align:center;">No matches found for this route.</p>`;
+            return;
+        }
+
+        matches.forEach(m => {
+            // Create encoded WhatsApp message
+            const waMsg = encodeURIComponent(`Hello ${m.name}, I am ${riderName}. I saw your ride from ${m.pickup} to ${m.dest} on Campus Pool. I'll join u from the pickup location`);
+            
+            list.innerHTML += `
+                <div class="match-item">
+                    <strong><i class="fas fa-user-circle"></i> ${m.name}</strong>
+                    <span><i class="fas fa-map-marker-alt"></i> ${m.pickup} → ${m.dest}</span>
+                    <span><i class="fas fa-clock"></i> Departs: ${m.time}</span>
+                    <span><i class="fas fa-couch"></i> ${m.seats} seats | $${m.charge}</span>
+                    
+                    <div class="contact-actions">
+                        <a href="tel:${m.phone}" class="btn-call">
+                            <i class="fas fa-phone"></i> Call
+                        </a>
+                        
+                        <a href="https://wa.me/${m.phone}?text=${waMsg}" target="_blank" class="btn-whatsapp">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function goBack() {
+        document.getElementById('form-section').classList.remove('hidden');
+        document.getElementById('results-section').classList.add('hidden');
+    }
+    function handleSOS() {
+    // 1. Define the Emergency Number (Replace with your actual college security number)
+    const securityNumber = "100"; 
+    
+    // 2. Ask for confirmation to prevent accidental clicks
+    const isEmergency = confirm("Action Required: Trigger Emergency SOS?\n\nThis will open your dialer to call Campus Security.");
+    
+    if (isEmergency) {
+        // 3. Get Rider Name for the message
+        const riderName = document.getElementById('userName').value || "A Student";
+        
+        // 4. Composition of Emergency WhatsApp (Optional Backup)
+        const sosMessage = encodeURIComponent(`HELP! SOS Alert from ${riderName}. I am using the Campus Pool app and I feel unsafe. Please track this number.`);
+        const whatsappSOS = `https://wa.me/${securityNumber}?text=${sosMessage}`;
+
+        // 5. Execution: Open the Phone Dialer immediately
+        window.location.href = `tel:${securityNumber}`;
+        
+        // Note: In a real emergency, the call is the most important. 
+        // We trigger the call first.
+    }
+}
+</script>
+</body>
+</html>

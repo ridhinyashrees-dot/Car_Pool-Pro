@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carpool Pro - Home</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 60px 0 40px;
+            color: white;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        /* Home Page Cards */
+        .choice-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin: 60px 0;
+        }
+
+        .choice-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .choice-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .choice-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .driver-icon { color: #4CAF50; }
+        .rider-icon { color: #2196F3; }
+
+        .choice-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .choice-card p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+        }
+
+        .cta-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Driver Dashboard */
+        .driver-dashboard {
+            display: none;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 50px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin-right: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: #f8f9ff;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+
+        .publish-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .choice-container { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div id="homePage">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo">Carpool Pro</h1>
+                <p class="tagline">Connect. Share. Save. Ride Together.</p>
+            </div>
+
+            <div class="choice-container">
+                <div class="choice-card" onclick="showDriverDashboard()">
+                    <div class="choice-icon"><i class="fas fa-car driver-icon"></i></div>
+                    <h2>Join as Driver</h2>
+                    <p>Offer rides, earn money, and help reduce traffic congestion</p>
+                    <button class="cta-button">Become Driver</button>
+                </div>
+
+                <div class="choice-card" onclick="showRiderDashboard()">
+                    <div class="choice-icon"><i class="fas fa-user-friends rider-icon"></i></div>
+                    <h2>Join as Rider</h2>
+                    <p>Find affordable rides and share the journey with others</p>
+                    <button class="cta-button">Find Rides</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="driverDashboard" class="driver-dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <button class="back-btn" onclick="showHomePage()">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </button>
+                <h1>Driver Dashboard</h1>
+                <p>Share your ride details and contact info</p>
+            </div>
+
+            <div class="dashboard-container">
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar"><i class="fas fa-user"></i></div>
+                        <div class="profile-info">
+                            <div class="form-group">
+                                <label>Driver Name</label>
+                                <input type="text" id="driverName" placeholder="Enter your full name" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="driverForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label><i class="fas fa-map-marker-alt"></i> Starting Location</label>
+                                <input type="text" placeholder="e.g., Pollachi" id="location" required>
+                            </div>
+
+                            <div class="form-group">
+    <label><i class="fas fa-map-pin"></i> Destination</label>
+    <select id="destination" required style="width: 100%; padding: 15px 20px; border: 2px solid #e1e8ed; border-radius: 12px; font-size: 1rem; background: #f8f9ff; appearance: none;">
+        <option value="" disabled selected>Select College Destination</option>
+        <option value="Sri Eshwar College of Engineering">Sri Eshwar College of Engineering</option>
+        <option value="Nehru College of Engineering">Nehru College of Engineering</option>
+        <option value="V.S.B College of Engineering">V.S.B College of Engineering</option>
+        <option value="MCT College of Engineering">MCT College of Engineering</option>
+        <option value="Karpagam College of Engineering">Karpagam College of Engineering</option>
+        <option value="PSG College of Engineering">PSG College of Engineering</option>
+        <option value="CIT college of Engineering">CIT college of Engineering</option>
+    </select>
+</div>
+
+                            <div class="form-group">
+                                <label><i class="fas fa-clock"></i> Departure Time</label>
+                                <input type="time" id="departureTime" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fas fa-couch"></i> Available Seats</label>
+                                <input type="number" min="1" max="8" placeholder="3" id="seats" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fas fa-money-bill-wave"></i> Price (per seat)</label>
+                                <input type="number" step="0.01" placeholder="9.99" id="petrolCharge" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fas fa-phone"></i> WhatsApp Number</label>
+                                <input type="text" id="driverPhone" placeholder="e.g. +919876543210" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="publish-btn">
+                            <i class="fas fa-rocket"></i> Publish Ride
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function showDriverDashboard() {
+        document.getElementById('homePage').style.display = 'none';
+        document.getElementById('driverDashboard').style.display = 'block';
+    }
+
+    function showHomePage() {
+        document.getElementById('driverDashboard').style.display = 'none';
+        document.getElementById('homePage').style.display = 'block';
+    }
+
+    function showRiderDashboard() {
+        window.location.href = '/rider';
+    }
+
+    document.getElementById('driverForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const rideData = {
+            name: document.getElementById('driverName').value,
+            pickup: document.getElementById('location').value,
+            dest: document.getElementById('destination').value,
+            seats: document.getElementById('seats').value,
+            charge: document.getElementById('petrolCharge').value,
+            time: document.getElementById('departureTime').value,
+            phone: document.getElementById('driverPhone').value // Captured here
+        };
+
+        try {
+            const response = await fetch('/api/add_ride', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(rideData)
+            });
+
+            if (response.ok) {
+                alert('Ride published successfully! 🎉');
+                showHomePage();
+            } else {
+                alert('Server error. Check if app.py is running.');
+            }
+        } catch (error) {
+            alert('Connection failed.');
+        }
+    });
+</script>
+</body>
+</html>
