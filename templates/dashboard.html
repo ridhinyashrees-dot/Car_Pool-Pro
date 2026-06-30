@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carpool Pro - Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Dashboard Header */
+        .dashboard-header {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-top: 15px;
+            color: #2c3e50;
+        }
+
+        .back-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 22px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .back-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Metrics Grid Layout */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-right: 20px;
+        }
+
+        /* Theme-specific Colors */
+        .blue-icon { background: #e3f2fd; color: #2196F3; }
+        .green-icon { background: #e8f5e9; color: #4CAF50; }
+        .purple-icon { background: #f3e5f5; color: #9c27b0; }
+        .orange-icon { background: #fff3e0; color: #ff9800; }
+
+        .metric-info p {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .metric-info h3 {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            font-weight: 700;
+        }
+
+        /* Analytics Visual Sections */
+        .chart-section {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #667eea;
+        }
+
+        /* Destination Leaderboard List */
+        .dest-list {
+            list-style: none;
+        }
+
+        .dest-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid #edf2f7;
+            transition: background 0.2s ease;
+        }
+
+        .dest-item:last-child {
+            border-bottom: none;
+        }
+
+        .dest-item:hover {
+            background: #f8fafc;
+        }
+
+        .dest-name {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .rank-badge {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            margin-right: 15px;
+            font-weight: 700;
+        }
+
+        .count-badge {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 20px 0; }
+            .metrics-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <a href="/" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+            <h1>Platform Performance Insights</h1>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon blue-icon">
+                    <i class="fas fa-car-side"></i>
+                </div>
+                <div class="metric-info">
+                    <p>Active Pools</p>
+                    <h3>{{ metrics.total_drivers }}</h3>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon green-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="metric-info">
+                    <p>Total Pool Value</p>
+                    <h3>₹{{ '%.2f' | format(metrics.total_value_pool | default(0)) }}</h3>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon purple-icon">
+                    <i class="fas fa-chair"></i>
+                </div>
+                <div class="metric-info">
+                    <p>Avg Open Seats</p>
+                    <h3>{{ '%.1f' | format(metrics.avg_seats | default(0)) }}</h3>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon orange-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div class="metric-info">
+                    <p>Avg Seat Contribution</p>
+                    <h3>₹{{ '%.2f' | format(metrics.avg_charge | default(0)) }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2 class="section-title">
+                <i class="fas fa-chart-bar"></i> Top Campus Destinations
+            </h2>
+            
+            {% if top_destinations %}
+                <ul class="dest-list">
+                    {% for dest in top_destinations %}
+                        <li class="dest-item">
+                            <div class="dest-name">
+                                <div class="rank-badge">{{ loop.index }}</div>
+                                {{ dest._id if dest._id else "Unknown Target Location" }}
+                            </div>
+                            <span class="count-badge">
+                                <i class="fas fa-route"></i> {{ dest.count }} active runs
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="no-data"><i class="fas fa-info-circle"></i> No ride records available yet to evaluate hub preferences.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>
