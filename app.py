@@ -312,11 +312,46 @@ def book_seat():
             "rider_phone": rider_phone
         })
 
-        return jsonify({"status": "success", "message": "Seat secured successfully! 🎉"}), 200
+        # 🎯 FIX: Return the driver's phone number back to the rider's frontend script
+        return jsonify({
+            "status": "success", 
+            "message": "Seat secured successfully! 🎉",
+            "driver_phone": ride.get('phone', '') # Passes driver phone reference seamlessly
+        }), 200
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
 
+
+@app.route('/api/cancel_seat', methods=['POST'])
+def cancel_seat():
+    data = request.json or {}
+    ride_id = data.get('ride_id')
+    rider_phone = str(data.get('riderPhone', '')).strip()
+
+    if not ride_id or not rider_phone:
+        return jsonify({"status": "error", "message": "Missing ride or rider credentials"}), 400
+
+    try:
+        # 1. Delete the specific entry from your bookings manifest roster
+        delete_result = bookings_collection.delete_one({
+            "ride_id": ObjectId(ride_id),
+            "rider_phone": rider_phone
+        })
+
+        if delete_result.deleted_count > 0:
+            # 2. Restore the seat metric count on the active driver document (+1 seat back)
+            drivers_collection.update_one(
+                {"_id": ObjectId(ride_id)},
+                {"$inc": {"seats": 1}}
+            )
+            return jsonify({"status": "success", "message": "Ride cancelled, seat restored!"}), 200
+        else:
+            return jsonify({"status": "error", "message": "No active matching booking found to cancel."}), 404
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/my_riders/<ride_id>', methods=['GET'])
 def get_my_riders(ride_id):
@@ -384,12 +419,24 @@ def dashboard():
 # 🔥 WEBSOCKET EVENTS FOR REAL-TIME TRACKING
 # =====================================================================
 
+# =====================================================================
+# 🔥 WEBSOCKET EVENTS FOR REAL-TIME TRACKING
+# =====================================================================
+
 @socketio.on('update_location')
 def handle_location_update(data):
     """
     Listens for live GPS data from the driver's device and immediately 
     broadcast it to the connected rider tracking them.
     """
+    # 🎯 FIX: Incase driver's javascript forgot to pack it, inject the backend session identifier 
+    # tracking phone directly into the broadcast dictionary structure safely.
+    if isinstance(data, dict):
+        if 'driver_phone' not in data:
+            data['driver_phone'] = session.get('driver_phone', '')
+        if 'driver_name' not in data:
+            data['driver_name'] = session.get('driver_username', 'Driver')
+
     emit('location_broadcast', data, broadcast=True)
 
 

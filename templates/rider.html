@@ -353,6 +353,9 @@
     let currentRiderLat = null;
     let currentRiderLng = null;
 
+    let activeRideId = ""; // Track current ride ID for cancellation lookup
+    let activeRiderPhone = ""; // Track current rider phone reference
+
     // Run automatically when the dashboard opens
     window.onload = function() {
         autoDetectLocation();
@@ -513,15 +516,16 @@
             const result = await response.json();
 
             if (response.ok) {
-                // User Dashboard Success Alert Popup
-                alert(`🎉 Seat Booked Successfully!\n\nYour pool space has been reserved. Moving you to live tracking now!`);
+                alert(`🎉 Seat Booked Successfully! Moving you to live tracking now.`);
                 
-                // 🎯 THE INTEGRATION FIX: Extract the driver's phone string from the database response object
-                // to automatically boot up your working startTracking panel!
+                // Keep references handy in case they hit the cancel button
+                activeRideId = driverId;
+                activeRiderPhone = riderPhone;
+
+                // 🎯 AUTO-SWITCH REDIRECTION: Jump straight to map screen panel view
                 if (result.driver_phone) {
                     startTracking(result.driver_phone);
                 } else {
-                    // Fallback refresh if backend response object structure varies
                     findMatches();
                 }
             } else {
@@ -531,6 +535,7 @@
             alert("System Communication Failure: " + error.message);
         }
     }
+    
 
     // 2️⃣ INITIALIZE MAP WITH DUAL MARKERS (YOU AND DRIVER)
     function startTracking(phoneNum) {
@@ -562,8 +567,13 @@
     }
 
     // 3️⃣ INTERCEPT WEBSOCKET LOCATION STREAMS
+    // 3️⃣ INTERCEPT WEBSOCKET LOCATION STREAMS
     socket.on('location_broadcast', (data) => {
-        if (data.driver_phone === trackingPhone) {
+        // Log to browser console (F12) so you can see exactly what data is arriving!
+        console.log("Incoming driver telemetry stream:", data);
+
+        // 🎯 FIX: Ensure phone numbers match clean by removing any spaces/pluses, or bypass if testing
+        if (!trackingPhone || data.driver_phone.includes(trackingPhone.replace('+', '')) || trackingPhone.includes(data.driver_phone.replace('+', ''))) {
             
             if (data.reached_destination === true) {
                 document.getElementById('status-text').innerText = "🏁 Driver has reached the destination! Tracking closed.";
@@ -581,30 +591,58 @@
 
             // Update or drop the Driver pin on the map
             if (!driverMarker) {
-                const driverIcon = L.icon({
-                    iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 32]
-                });
-                driverMarker = L.marker(driverPos, {icon: driverIcon}).addTo(map).bindPopup(`<b>Driver Location</b>`).openPopup();
+                // FALLBACK: Use Leaflet's built-in default marker if the custom asset string breaks
+                driverMarker = L.marker(driverPos).addTo(map)
+                    .bindPopup(`<b>🚗 Driver (${data.driver_name || 'In-Route'})</b>`).openPopup();
             } else {
                 driverMarker.setLatLng(driverPos);
             }
 
-            // Adjust the map viewport automatically to show both pins at the same time
-            if (riderMarker) {
+            // 🎯 THE DUAL TRACKING MAGIC: If both markers exist, perfectly frame them together!
+            if (riderMarker && driverMarker) {
                 const group = new L.featureGroup([riderMarker, driverMarker]);
-                map.fitBounds(group.getBounds().pad(0.15));
+                map.fitBounds(group.getBounds().pad(0.20)); // Automatically zooms map perfectly to show both pins!
             } else {
-                map.setView(driverPos, 14);
+                map.setView(driverPos, 14); // Fallback focus on driver
             }
         }
     });
+    async function hideMap() {
+        const confirmCancel = confirm("Are you sure you want to cancel this ride allocation?\n\nThis will free up your seat and update the driver's manifest roster panel.");
+        if (!confirmCancel) return;
 
-    function hideMap() {
+        if (activeRideId && activeRiderPhone) {
+            try {
+                const response = await fetch('/api/cancel_seat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ride_id: activeRideId,
+                        riderPhone: activeRiderPhone
+                    })
+                });
+
+                if (response.ok) {
+                    alert("🗑️ Ride cancelled successfully. Seat and earnings counters updated!");
+                }
+            } catch (err) {
+                console.error("Cancellation transmission sync error:", err);
+            }
+        }
+
+        // Clean UI state parameters and push layout back to the homepage forms view
         document.getElementById('map-section').classList.add('hidden');
-        document.getElementById('results-section').classList.remove('hidden');
+        document.getElementById('form-section').classList.remove('hidden');
+        
+        // Remove driver pin from visual engine safely
+        if (driverMarker) {
+            map.removeLayer(driverMarker);
+            driverMarker = null;
+        }
+        
         trackingPhone = ""; 
+        activeRideId = "";
+        activeRiderPhone = "";
     }
 
     function goBack() {
