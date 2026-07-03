@@ -82,10 +82,22 @@
         <section id="publish-section" class="card hidden">
             <div class="back-btn" onclick="showSection('landing-section')"><i class="fas fa-arrow-left"></i> Back to Main Menu</div>
             <h2><i class="fas fa-bullhorn"></i> Offer a Campus Ride</h2>
-            <form id="driverForm">
+            <form id="driverForm" onsubmit="event.preventDefault(); submitPublishRideForm();">
                 <div class="input-group"><label>Driver Name</label><input type="text" id="driverName" required></div>
                 <div class="input-group"><label>Pickup Location</label><input type="text" id="location" required></div>
-                <div class="input-group"><label>Destination</label><input type="text" id="destination" required></div>
+                <div class="input-group">
+                    <label><i class="fas fa-flag-checkered"></i> Destination</label>
+                    <select id="destination" style="width: 100%; padding: 1.2rem 1.5rem; border: 2px solid #e8f0fe; border-radius: 16px; font-size: 1rem; background: #fafbff; appearance: none;" required>
+                        <option value="" disabled selected>Where are you heading?</option>
+                        <option value="Sri Eshwar College of Engineering">Sri Eshwar College of Engineering</option>
+                        <option value="Nehru College of Engineering">Nehru College of Engineering</option>
+                        <option value="V.S.B College of Engineering">V.S.B College of Engineering</option>
+                        <option value="MCT College of Engineering">MCT College of Engineering</option>
+                        <option value="Karpagam College of Engineering">Karpagam College of Engineering</option>
+                        <option value="PSG College of Engineering">PSG College of Engineering</option>
+                        <option value="CIT college of Engineering">CIT college of Engineering</option>
+                    </select>
+                </div>
                 <div class="input-group"><label>Available Seats</label><input type="number" id="seats" required></div>
                 <div class="input-group"><label>Petrol Charge per Seat (₹)</label><input type="number" id="petrolCharge" required></div>
                 <div class="input-group"><label>Departure Time</label><input type="time" id="departureTime" required></div>
@@ -122,7 +134,7 @@
             <div style="margin-bottom: 20px;">
                 <h3 style="color: var(--dark); margin-bottom: 10px;"><i class="fas fa-users"></i> Booked Passengers Manifest</h3>
                 <div id="manifest-list" style="background: #fafbff; border-radius: 12px; padding: 10px; border: 1px solid #e2e8f0;">
-                    </div>
+                </div>
             </div>
 
             <button onclick="logoutDriver()" class="btn btn-outline" style="border-color: #e53e3e; color: #e53e3e;">
@@ -137,30 +149,27 @@
 
     <script>
     let isSignUpMode = false;
-let isDriverLoggedIn = false;
+    let isDriverLoggedIn = false;
 
-// 🟢 THE PERMANENT FIX: Using 'var' completely bypasses the initialization deadlock
-var myLeafletMapInstance = null; 
-var driverMarker = null;         
-var watchId = null;
-var isTracking = false;
+    var myLeafletMapInstance = null; 
+    var driverMarker = null;         
+    var watchId = null;
+    var isTracking = false;
 
-let socket = io(); // Keep socket as let, it doesn't conflict
+    let socket = io();
 
-    // Core Workflow View Controller
     function showSection(id) {
-    document.getElementById('landing-section').classList.add('hidden');
-    document.getElementById('publish-section').classList.add('hidden');
-    document.getElementById('auth-section').classList.add('hidden');
-    document.getElementById('dashboard-section').classList.add('hidden');
-    
-    document.getElementById(id).classList.remove('hidden');
-    
-    // Recalculate layout constraints with renamed variable instance
-    if (id === 'dashboard-section' && myLeafletMapInstance) {
-        setTimeout(() => myLeafletMapInstance.invalidateSize(), 200);
+        document.getElementById('landing-section').classList.add('hidden');
+        document.getElementById('publish-section').classList.add('hidden');
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.add('hidden');
+        
+        document.getElementById(id).classList.remove('hidden');
+        
+        if (id === 'dashboard-section' && myLeafletMapInstance) {
+            setTimeout(() => myLeafletMapInstance.invalidateSize(), 200);
+        }
     }
-}
 
     function checkAuthAndLoadDashboard() {
         if (isDriverLoggedIn) {
@@ -190,7 +199,6 @@ let socket = io(); // Keep socket as let, it doesn't conflict
         }
     }
 
-    // 🎯 FIXED: HANDLES AUTH AND IMMEDIATELY FORCES REDIRECT TO DASHBOARD
     async function handleAuthSubmit() {
         const username = document.getElementById('auth-user').value;
         const password = document.getElementById('auth-pass').value;
@@ -211,11 +219,7 @@ let socket = io(); // Keep socket as let, it doesn't conflict
                 alert(data.message);
                 if (!isSignUpMode) {
                     isDriverLoggedIn = true;
-                    
-                    // First change the screen view directly to the dashboard section layout
                     showSection('dashboard-section');
-                    
-                    // Then instantly fetch data from Atlas to fill in the passenger manifest rows
                     await loadDriverDashboardData();
                 } else {
                     toggleAuthMode();
@@ -234,8 +238,6 @@ let socket = io(); // Keep socket as let, it doesn't conflict
             if (!res.ok) throw new Error("Session expired.");
 
             const data = await res.json();
-            
-            // Bring map container frame into view context safely
             initMap();
 
             document.getElementById('earning-badge').innerText = `💰 Total Projected Earnings: ₹${data.total_earnings}`;
@@ -266,101 +268,51 @@ let socket = io(); // Keep socket as let, it doesn't conflict
         }
     }
 
-    // MAP HOOKS CONTROL LAYOUT
-    // COMPLETELY FIXES THE "ALREADY INITIALIZED" OR MAP INITIALIZATION ERRORS
-function initMap() {
-    try {
-        if (window.myLeafletMapInstance) {
-            window.myLeafletMapInstance.remove();
-            window.myLeafletMapInstance = null;
-        }
-        
-        const mapContainer = document.getElementById('map');
-        if (!mapContainer) return;
+    function initMap() {
+        try {
+            if (window.myLeafletMapInstance) {
+                window.myLeafletMapInstance.remove();
+                window.myLeafletMapInstance = null;
+            }
+            
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) return;
 
-        // 🎯 THE FIX: Get instant current position to center the map dynamically
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const myLat = position.coords.latitude;
-                const myLng = position.coords.longitude;
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const myLat = position.coords.latitude;
+                    const myLng = position.coords.longitude;
 
-                // Center the map precisely on the driver's true location
-                window.myLeafletMapInstance = L.map('map').setView([myLat, myLng], 15); 
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
-                    timeout: 4000 
-                }).addTo(window.myLeafletMapInstance);
-                
-                // Drop the marker exactly where the driver is
-                window.driverMarker = L.marker([myLat, myLng]).addTo(window.myLeafletMapInstance)
-                    .bindPopup('Your True Current Location').openPopup();
-            }, 
-            (error) => {
-                console.warn("GPS fallback used due to timeout. Using default campus view.");
-                // Fallback to campus coordinates if GPS permission is slow or blocked
-                createFallbackMap(10.787, 79.138);
-            });
-        } else {
-            createFallbackMap(10.787, 79.138);
-        }
-        
-    } catch (error) {
-        console.error("Map layer initialization bypass:", error);
-    }
-}
-
-// Helper function to build the map if geolocation is turned off
-function createFallbackMap(lat, lng) {
-    window.myLeafletMapInstance = L.map('map').setView([lat, lng], 14); 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(window.myLeafletMapInstance);
-    window.driverMarker = L.marker([lat, lng]).addTo(window.myLeafletMapInstance).bindPopup('Default Location');
-}
-
-function toggleLocationTracking() {
-    const trackBtn = document.getElementById('track-btn');
-    
-    if (isTracking) {
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-        isTracking = false;
-        trackBtn.innerHTML = `<i class="fas fa-location-arrow"></i> Start Live Location Sharing`;
-        trackBtn.className = "btn btn-secondary";
-        alert("Location sharing stopped.");
-    } else {
-        if (!navigator.geolocation) {
-            alert("Your browser does not support GPS Geolocation utilities.");
-            return;
-        }
-        
-        isTracking = true;
-        trackBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Broadcasting Live Location...`;
-        trackBtn.className = "btn btn-tracking-on";
-
-        watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
-                const newLatLng = new L.LatLng(lat, lng);
-                if (driverMarker) driverMarker.setLatLng(newLatLng);
-                if (myLeafletMapInstance) myLeafletMapInstance.panTo(newLatLng);
-
-                socket.emit('update_location', {
-                    lat: lat,
-                    lng: lng,
-                    driver_name: document.getElementById('driverName').value || "Driver"
+                    window.myLeafletMapInstance = L.map('map').setView([myLat, myLng], 15); 
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        timeout: 4000 
+                    }).addTo(window.myLeafletMapInstance);
+                    
+                    window.driverMarker = L.marker([myLat, myLng]).addTo(window.myLeafletMapInstance)
+                        .bindPopup('Your True Current Location').openPopup();
+                }, 
+                (error) => {
+                    console.warn("GPS fallback used due to timeout. Using default campus view.");
+                    createFallbackMap(10.787, 79.138);
                 });
-            },
-            (error) => {
-                console.error("GPS Signal Timeout Error:", error);
-            },
-            { enableHighAccuracy: true, maximumAge: 0 }
-        );
+            } else {
+                createFallbackMap(10.787, 79.138);
+            }
+            
+        } catch (error) {
+            console.error("Map layer initialization bypass:", error);
+        }
     }
-}
 
+    function createFallbackMap(lat, lng) {
+        window.myLeafletMapInstance = L.map('map').setView([lat, lng], 14); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(window.myLeafletMapInstance);
+        window.driverMarker = L.marker([lat, lng]).addTo(window.myLeafletMapInstance).bindPopup('Default Location');
+    }
 
     function toggleLocationTracking() {
         const trackBtn = document.getElementById('track-btn');
@@ -387,8 +339,8 @@ function toggleLocationTracking() {
                     const lng = position.coords.longitude;
 
                     const newLatLng = new L.LatLng(lat, lng);
-                    driverMarker.setLatLng(newLatLng);
-                    map.panTo(newLatLng);
+                    if (driverMarker) driverMarker.setLatLng(newLatLng);
+                    if (myLeafletMapInstance) myLeafletMapInstance.panTo(newLatLng);
 
                     socket.emit('update_location', {
                         lat: lat,
@@ -415,19 +367,30 @@ function toggleLocationTracking() {
         showSection('landing-section');
     }
 
-    document.getElementById('driverForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
+    async function submitPublishRideForm() {
+        console.log("Publish button clicked manually. Extracting data fields...");
+
+        const destinationElement = document.getElementById('destination');
+        const selectedDestination = destinationElement ? destinationElement.value : "";
+
         const rideData = {
-            driverName: document.getElementById('driverName').value,
-            location: document.getElementById('location').value,
-            destination: document.getElementById('destination').value,
-            seats: document.getElementById('seats').value,
-            petrolCharge: document.getElementById('petrolCharge').value,
+            driverName: document.getElementById('driverName').value.trim(),
+            location: document.getElementById('location').value.trim(),
+            destination: selectedDestination,
+            seats: parseInt(document.getElementById('seats').value) || 0,
+            petrolCharge: document.getElementById('petrolCharge').value.trim(),
             departureTime: document.getElementById('departureTime').value,
-            driverPhone: document.getElementById('driverPhone').value
+            driverPhone: document.getElementById('driverPhone').value.trim()
         };
 
+        if (!rideData.driverName || !rideData.location || !rideData.destination || !rideData.seats || !rideData.driverPhone) {
+            alert("⚠️ Form Validation Failed: Please ensure all input fields are filled out properly!");
+            return;
+        }
+
         try {
+            console.log("Data packet validated. Routing payload to backend API...", rideData);
+            
             const response = await fetch('/api/add_ride', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -435,7 +398,9 @@ function toggleLocationTracking() {
             });
 
             if (response.ok) {
-                alert('Ride published successfully! 🎉');
+                alert('🚗 Ride Successfully Published! Your route is now live for campus riders.');
+                document.getElementById('driverForm').reset();
+
                 if (isDriverLoggedIn) {
                     loadDriverDashboardData();
                 } else {
@@ -443,12 +408,13 @@ function toggleLocationTracking() {
                 }
             } else {
                 const err = await response.json();
-                alert('❌ Error: ' + err.message);
+                alert('❌ API Rejection: ' + (err.message || 'Data sync error'));
             }
         } catch (error) {
-            alert('Connection tracking error: ' + error.message);
+            console.error("Fetch pipeline crashed:", error);
+            alert('❌ Network Failure: ' + error.message);
         }
-    });
-</script>
+    }
+    </script>
 </body>
 </html>

@@ -27,14 +27,21 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 MONGO_URI = "mongodb+srv://carpool_admin:CarpoolPro123@cluster0.k9mo670.mongodb.net/carpool_db?retryWrites=true&w=majority&appName=Cluster0&connectTimeoutMS=30000&socketTimeoutMS=30000"
 
 try:
-    client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    
+    # 🎯 Database response connection-ai test panna ping trigger:
+    client.admin.command('ping')
+    print("✅ DATABASE CONNECTIVITY VERIFIED: Successfully connected to MongoDB Atlas!")
     db = client['carpool_db']
     drivers_collection = db['drivers']
-    bookings_collection = db['bookings']
-    users_collection = db['users']  # 🔥 Added authentication collection tracking reference
+    
+    users_collection = db['users'] 
+    bookings_collection = db['bookings'] # 🔥 Added authentication collection tracking reference
     print("🚀 Successfully connected to MongoDB Atlas Cluster!")
 except Exception as e:
-    print(f"❌ Connection error: {e}")
+    print(f"❌ DATABASE CONNECTION CRITICAL ERROR: {str(e)}")
+    print("👉 ACTION REQUIRED: Check your MongoDB Atlas Network Access IP Whitelist (0.0.0.0/0).")
+    sys.exit(1)
 
 
 # =====================================================================
@@ -429,16 +436,15 @@ def handle_location_update(data):
     Listens for live GPS data from the driver's device and immediately 
     broadcast it to the connected rider tracking them.
     """
-    # 🎯 FIX: Incase driver's javascript forgot to pack it, inject the backend session identifier 
-    # tracking phone directly into the broadcast dictionary structure safely.
+    # Verify the incoming data is a dictionary safely
     if isinstance(data, dict):
         if 'driver_phone' not in data:
             data['driver_phone'] = session.get('driver_phone', '')
         if 'driver_name' not in data:
             data['driver_name'] = session.get('driver_username', 'Driver')
 
-    emit('location_broadcast', data, broadcast=True)
-
+    # 🎯 FIX: Changed the event string to match the rider's listener exactly!
+    emit('driver_location_update', data, broadcast=True)
 
 if __name__ == '__main__':
     # CRITICAL: Using socketio.run instead of app.run to support WebSocket streaming concurrently
