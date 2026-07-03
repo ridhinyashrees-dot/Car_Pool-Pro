@@ -70,7 +70,7 @@
             <h2>Welcome to Campus Pool</h2>
             <p style="text-align: center; color: #7f8c8d; margin-bottom: 2rem;">Select your route profile to begin carpooling</p>
             <div class="mode-selection">
-                <button class="mode-btn btn-driver" onclick="showSection('publish-section')">
+                <button class="mode-btn btn-driver" onclick="checkAuthAndLoadDashboard()">
                     <i class="fas fa-steering-wheel"></i> Become a Driver
                 </button>
                 <a href="/rider" class="mode-btn btn-rider">
@@ -173,7 +173,7 @@
 
     function checkAuthAndLoadDashboard() {
         if (isDriverLoggedIn) {
-            loadDriverDashboardData();
+            showSection('publish-section'); // Redirect directly to ride route offering setup page
         } else {
             showSection('auth-section');
         }
@@ -219,8 +219,8 @@
                 alert(data.message);
                 if (!isSignUpMode) {
                     isDriverLoggedIn = true;
-                    showSection('dashboard-section');
-                    await loadDriverDashboardData();
+                    // 🎯 FIXED: Send them directly to publish their route now that login is successful
+                    showSection('publish-section'); 
                 } else {
                     toggleAuthMode();
                 }
@@ -401,11 +401,9 @@
                 alert('🚗 Ride Successfully Published! Your route is now live for campus riders.');
                 document.getElementById('driverForm').reset();
 
-                if (isDriverLoggedIn) {
-                    loadDriverDashboardData();
-                } else {
-                    showSection('landing-section');
-                }
+                // 🎯 FIXED: Direct driver to the central live-tracking telemetry dashboard view after publishing route
+                showSection('dashboard-section');
+                loadDriverDashboardData();
             } else {
                 const err = await response.json();
                 alert('❌ API Rejection: ' + (err.message || 'Data sync error'));

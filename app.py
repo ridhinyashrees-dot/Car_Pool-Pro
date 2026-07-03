@@ -8,7 +8,7 @@ from bson.objectid import ObjectId
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_socketio import SocketIO, emit
 from pymongo import MongoClient
 import certifi
@@ -34,7 +34,6 @@ try:
     print("✅ DATABASE CONNECTIVITY VERIFIED: Successfully connected to MongoDB Atlas!")
     db = client['carpool_db']
     drivers_collection = db['drivers']
-    
     users_collection = db['users'] 
     bookings_collection = db['bookings'] # 🔥 Added authentication collection tracking reference
     print("🚀 Successfully connected to MongoDB Atlas Cluster!")
@@ -68,20 +67,33 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 
 # =====================================================================
-# APPLICATION ENDPOINTS (ROUTING)
+# 1. CORE LANDING ROUTE (Role Selection Screen)
 # =====================================================================
 
 @app.route('/')
 def index():
+    """
+    The landing portal page (home.html). 
+    Presents choice layout UI: 'I am a Rider' or 'I am a Driver'.
+    """
     return render_template('home.html')
+
+
+# =====================================================================
+# 2. RIDER WORKFLOW PAGES (Direct Access - No Registration Required)
+# =====================================================================
 
 @app.route('/rider')
 def rider_page():
+    """
+    Rider Dashboard View (rider.html). 
+    Accessible instantly without forcing login credentials.
+    """
     return render_template('rider.html')
 
 
 # =====================================================================
-# NEW: DRIVER REGISTRATION & AUTHENTICATION ENDPOINTS
+# 3. DRIVER AUTHENTICATION ENDPOINTS
 # =====================================================================
 
 @app.route('/api/driver/signup', methods=['POST'])
@@ -134,8 +146,60 @@ def driver_logout():
 
 
 # =====================================================================
-# NEW: LIVE DRIVER PORTAL TELEMETRY DATA AGGREGATION
+# 4. DRIVER WORKFLOW & TELEMETRY DASHBOARD PAGES (Protected Views)
 # =====================================================================
+
+@app.route('/dashboard')
+def dashboard():
+    """
+    Driver Analytics & Operational Portal View (dashboard.html).
+    Protected view mapping to ensure security isolation.
+    """
+    if 'driver_username' not in session:
+        # Redirect to root page so unauthorized individuals can restart choices
+        return redirect(url_for('index'))
+
+    try:
+        # Safe aggregation framework matching fields exactly to the insertion collection maps
+        driver_pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "total_drivers": {"$sum": 1},
+                    "total_value_pool": {"$sum": {"$toDouble": "$charge"}},
+                    "avg_seats": {"$avg": {"$toDouble": "$seats"}},
+                    "avg_charge": {"$avg": {"$toDouble": "$charge"}}
+                }
+            }
+        ]
+        
+        stats_result = list(drivers_collection.aggregate(driver_pipeline))
+        
+        if stats_result and len(stats_result) > 0:
+            metrics = stats_result[0]
+        else:
+            metrics = {
+                "total_drivers": 0,
+                "total_value_pool": 0,
+                "avg_seats": 0,
+                "avg_charge": 0
+            }
+            
+        # Top campus destinations aggregation based on "dest" field values
+        dest_pipeline = [
+            {"$group": {"_id": "$dest", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 3}
+        ]
+        top_destinations = list(drivers_collection.aggregate(dest_pipeline))
+
+        return render_template('dashboard.html', metrics=metrics, top_destinations=top_destinations)
+        
+    except Exception as e:
+        print(f"❌ Dashboard Pipeline Error: {e}")
+        fallback_metrics = {"total_drivers": 0, "total_value_pool": 0, "avg_seats": 0, "avg_charge": 0}
+        return render_template('dashboard.html', metrics=fallback_metrics, top_destinations=[])
+
 
 @app.route('/api/driver/dashboard_data', methods=['GET'])
 def get_dashboard_data():
@@ -189,7 +253,7 @@ def get_dashboard_data():
 
 
 # =====================================================================
-# EXISTING CORE API ENDPOINTS (PRESERVED EXCLUSIVELY)
+# 5. MATCHING & BOOKING SYSTEM ENGINE APIs
 # =====================================================================
 
 @app.route('/api/add_ride', methods=['POST'])
@@ -286,6 +350,7 @@ def find_matches():
         print(f"❌ Match Route System Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 @app.route('/api/book_seat', methods=['POST'])
 def book_seat():
     data = request.json or {}
@@ -328,7 +393,6 @@ def book_seat():
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-    
 
 
 @app.route('/api/cancel_seat', methods=['POST'])
@@ -360,6 +424,7 @@ def cancel_seat():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 @app.route('/api/my_riders/<ride_id>', methods=['GET'])
 def get_my_riders(ride_id):
     try:
@@ -376,57 +441,6 @@ def get_my_riders(ride_id):
 
 
 # =====================================================================
-# ANALYTICS DASHBOARD ROUTE
-# =====================================================================
-@app.route('/dashboard')
-def dashboard():
-    try:
-        # Safe aggregation framework matching fields exactly to the insertion collection maps
-        driver_pipeline = [
-            {
-                "$group": {
-                    "_id": None,
-                    "total_drivers": {"$sum": 1},
-                    "total_value_pool": {"$sum": {"$toDouble": "$charge"}},
-                    "avg_seats": {"$avg": {"$toDouble": "$seats"}},
-                    "avg_charge": {"$avg": {"$toDouble": "$charge"}}
-                }
-            }
-        ]
-        
-        stats_result = list(drivers_collection.aggregate(driver_pipeline))
-        
-        if stats_result and len(stats_result) > 0:
-            metrics = stats_result[0]
-        else:
-            metrics = {
-                "total_drivers": 0,
-                "total_value_pool": 0,
-                "avg_seats": 0,
-                "avg_charge": 0
-            }
-            
-        # Top campus destinations aggregation based on "dest" field values
-        dest_pipeline = [
-            {"$group": {"_id": "$dest", "count": {"$sum": 1}}},
-            {"$sort": {"count": -1}},
-            {"$limit": 3}
-        ]
-        top_destinations = list(drivers_collection.aggregate(dest_pipeline))
-
-        return render_template('dashboard.html', metrics=metrics, top_destinations=top_destinations)
-        
-    except Exception as e:
-        print(f"❌ Dashboard Pipeline Error: {e}")
-        fallback_metrics = {"total_drivers": 0, "total_value_pool": 0, "avg_seats": 0, "avg_charge": 0}
-        return render_template('dashboard.html', metrics=fallback_metrics, top_destinations=[])
-
-
-# =====================================================================
-# 🔥 WEBSOCKET EVENTS FOR REAL-TIME TRACKING
-# =====================================================================
-
-# =====================================================================
 # 🔥 WEBSOCKET EVENTS FOR REAL-TIME TRACKING
 # =====================================================================
 
@@ -436,7 +450,6 @@ def handle_location_update(data):
     Listens for live GPS data from the driver's device and immediately 
     broadcast it to the connected rider tracking them.
     """
-    # Verify the incoming data is a dictionary safely
     if isinstance(data, dict):
         if 'driver_phone' not in data:
             data['driver_phone'] = session.get('driver_phone', '')
@@ -445,6 +458,7 @@ def handle_location_update(data):
 
     # 🎯 FIX: Changed the event string to match the rider's listener exactly!
     emit('driver_location_update', data, broadcast=True)
+
 
 if __name__ == '__main__':
     # CRITICAL: Using socketio.run instead of app.run to support WebSocket streaming concurrently
