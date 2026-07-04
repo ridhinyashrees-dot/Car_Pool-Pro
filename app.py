@@ -3,6 +3,8 @@ import asyncio
 import math  # Used for coordinate distance math calculations
 import os
 from bson.objectid import ObjectId
+import eventlet
+eventlet.monkey_patch()
 
 # 🔥 CRITICAL FIX: Prevent 'OSError: [WinError 10038]' on Windows with Python 3.14+
 if sys.platform == 'win32':
@@ -19,7 +21,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'campus_pool_secure_key_2026'
 
 # Initialize SocketIO to allow real-time WebSocket communication
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # =====================================================================
 # MONGO LIVE CLUSTER SYNC DIRECTORY
