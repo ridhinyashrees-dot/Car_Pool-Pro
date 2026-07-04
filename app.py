@@ -444,21 +444,81 @@ def get_my_riders(ride_id):
 # 🔥 WEBSOCKET EVENTS FOR REAL-TIME TRACKING
 # =====================================================================
 
-@socketio.on('update_location')
+# =====================================================================
+# 🔥 WEBSOCKET EVENTS FOR REAL-TIME TRACKING
+# =====================================================================
+
+@socketio.on("update_location")
 def handle_location_update(data):
     """
-    Listens for live GPS data from the driver's device and immediately 
-    broadcast it to the connected rider tracking them.
+    Receives live GPS updates from the driver's browser,
+    updates MongoDB with the latest coordinates,
+    and broadcasts them to all connected riders.
     """
-    if isinstance(data, dict):
-        if 'driver_phone' not in data:
-            data['driver_phone'] = session.get('driver_phone', '')
-        if 'driver_name' not in data:
-            data['driver_name'] = session.get('driver_username', 'Driver')
 
-    # 🎯 FIX: Changed the event string to match the rider's listener exactly!
-    emit('driver_location_update', data, broadcast=True)
+    try:
+        # -----------------------------
+        # Validate incoming data
+        # -----------------------------
+        if not isinstance(data, dict):
+            return
 
+        lat = data.get("lat")
+        lng = data.get("lng")
+
+        # -----------------------------
+        # Use session values if frontend
+        # didn't send them.
+        # -----------------------------
+        driver_phone = data.get("driver_phone") or session.get("driver_phone", "")
+        driver_name = data.get("driver_name") or session.get("driver_username", "Driver")
+
+        # -----------------------------
+        # Prepare broadcast object
+        # -----------------------------
+        payload = {
+            "lat": lat,
+            "lng": lng,
+            "driver_phone": driver_phone,
+            "driver_name": driver_name
+        }
+
+        # -----------------------------
+        # Update MongoDB
+        # -----------------------------
+        if driver_phone:
+
+            drivers_collection.update_one(
+                {
+                    "phone": driver_phone
+                },
+                {
+                    "$set": {
+                        "current_lat": lat,
+                        "current_lng": lng
+                    }
+                }
+            )
+
+        # -----------------------------
+        # Debug (Keep for now)
+        # -----------------------------
+        print("======================================")
+        print("LIVE LOCATION RECEIVED")
+        print(payload)
+        print("======================================")
+
+        # -----------------------------
+        # Broadcast to every rider
+        # -----------------------------
+        emit(
+            "driver_location_update",
+            payload,
+            broadcast=True
+        )
+
+    except Exception as e:
+        print(f"Socket Error : {e}")
 
 if __name__ == '__main__':
     # CRITICAL: Using socketio.run instead of app.run to support WebSocket streaming concurrently
