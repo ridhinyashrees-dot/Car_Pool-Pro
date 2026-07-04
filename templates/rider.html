@@ -339,7 +339,9 @@
     </main>
 
     <script>
-    const socket = io();
+    const socket = io({
+    transports: ['polling', 'websocket']
+});
     let map;
     let driverMarker, riderMarker;
     let trackingPhone = "";

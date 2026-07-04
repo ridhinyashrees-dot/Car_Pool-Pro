@@ -156,7 +156,9 @@
     var watchId = null;
     var isTracking = false;
 
-    let socket = io();
+    const socket = io({
+    transports: ['polling', 'websocket']
+});
 
     function showSection(id) {
         document.getElementById('landing-section').classList.add('hidden');
