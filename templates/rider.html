@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
   <style>
     #rider-map { 
         width: 100%; 
@@ -350,7 +353,58 @@
     window.onload = function() {
         autoDetectLocation();
     };
+    // Keep track of the routing control object globally so we don't draw multiple lines
+let routingControl = null;
 
+socket.on('driver_location_update', function(data) {
+    console.log("🚀 Incoming Driver Stream caught!", data);
+
+    const driverLat = data.lat;
+    const driverLng = data.lng;
+
+    // Clear out the orange "Waiting" text block if it exists
+    const statusLabel = document.querySelector('span[style*="orange"]');
+    if (statusLabel) statusLabel.innerText = "Driver Connected Live!";
+
+    // Grab your active Leaflet map instance
+    let liveMap = window.myLeafletMapInstance || (typeof map !== 'undefined' ? map : null);
+
+    if (liveMap) {
+        // 1. Get the Rider's current position marker coordinates
+        // If your rider marker variable has a different name, swap 'riderMarker' out here
+        let riderLatLng = typeof riderMarker !== 'undefined' ? riderMarker.getLatLng() : liveMap.getCenter();
+
+        // 2. Clear the old route line if it already exists before drawing the new updated path
+        if (routingControl) {
+            liveMap.removeControl(routingControl);
+        }
+
+        // 3. Draw the live driving route path between Rider and Driver
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(riderLatLng.lat, riderLatLng.lng), // Start point (Rider)
+                L.latLng(driverLat, driverLng)             // End point (Driver)
+            ],
+            lineOptions: {
+                styles: [{ color: '#2563eb', weight: 5, opacity: 0.8 }] // Blue route line
+            },
+            createMarker: function(i, waypoint, n) {
+                // Custom markers: i === 0 is the start (Rider), i === n-1 is the destination (Driver)
+                if (i === 0) {
+                    return L.marker(waypoint.latLng).bindPopup("<b>📍 Your Location</b>");
+                } else {
+                    return L.marker(waypoint.latLng).bindPopup(`<b>🚗 Driver: ${data.driver_name || 'Live'}</b>`).openPopup();
+                }
+            },
+            addWaypoints: false, // Prevents users from dragging and changing the route manually
+            routeWhileDragging: false,
+            show: false // Hides the ugly white text navigation direction box on the side
+        }).addTo(liveMap);
+
+    } else {
+        console.error("❌ Map instance not found in execution context.");
+    }
+});
     function autoDetectLocation() {
         const pickupInput = document.getElementById('pickup');
         pickupInput.placeholder = "Locating your GPS coordinates...";
